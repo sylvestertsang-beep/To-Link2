@@ -68,6 +68,7 @@
       <div class="posts-section">
         <div class="section-header">
           <h3>{{ $t('recentPosts') }}</h3>
+          <el-button text :icon="Refresh" :loading="isLoadingPosts" circle :title="$t('refresh')" @click="refreshPosts" />
         </div>
 
         <div v-if="isLoadingPosts" class="posts-loading">
@@ -127,6 +128,7 @@
       <div class="quests-section">
         <div class="section-header">
           <h3>{{ $t('pendingQuest') }}</h3>
+          <el-button text :icon="Refresh" :loading="isLoadingQuests" circle :title="$t('refresh')" @click="refreshQuests" />
         </div>
 
         <el-empty
@@ -177,6 +179,7 @@
       <div class="quests-section">
         <div class="section-header">
           <h3>{{ $t('acceptedQuest') }}</h3>
+          <el-button text :icon="Refresh" :loading="isLoadingQuests" circle :title="$t('refresh')" @click="refreshQuests" />
         </div>
 
         <el-empty
@@ -228,7 +231,8 @@ import {
   Delete,
   Star,
   ChatDotRound,
-  Loading
+  Loading,
+  Refresh
 } from '@element-plus/icons-vue'
 import { getPost } from '~/api/post'
 import { getUser } from '~/api/auth'
@@ -241,6 +245,7 @@ const { t, locale } = useI18n()
 const allPosts = ref<Post[]>([])
 const questRequests = ref<any[]>([])
 const isLoadingPosts = ref(false)
+const isLoadingQuests = ref(false)
 const currentUserEmail = ref<string>('')
 const currentUserId = ref<string>('')
 const currentUserName = ref<string>('')
@@ -758,6 +763,13 @@ onMounted(async () => {
   }
   
   // Fetch recent posts from API
+  await refreshPosts()
+})
+
+const refreshPosts = async () => {
+  if (isLoadingPosts.value) return
+  const userPostsRaw = localStorage.getItem('userPosts')
+  const userPosts = userPostsRaw ? JSON.parse(userPostsRaw) : []
   isLoadingPosts.value = true
   try {
     if (deletedAllPosts.value) {
@@ -772,7 +784,6 @@ onMounted(async () => {
     const [error, data] = await getPost()
     if (!error && data && data.data && Array.isArray(data.data)) {
       allPosts.value = mergePosts(userPosts, data.data)
-      console.log('Loaded posts:', data.data.length)
     } else {
       console.error('Error fetching posts:', error)
     }
@@ -781,7 +792,25 @@ onMounted(async () => {
   } finally {
     isLoadingPosts.value = false
   }
-})
+}
+
+const refreshQuests = () => {
+  if (isLoadingQuests.value) return
+  isLoadingQuests.value = true
+  try {
+    const userQuests = localStorage.getItem('userQuests')
+    if (userQuests) {
+      const quests = JSON.parse(userQuests)
+      if (Array.isArray(quests)) {
+        questRequests.value = quests
+      }
+    }
+  } catch (e) {
+    console.error('Error refreshing quests:', e)
+  } finally {
+    isLoadingQuests.value = false
+  }
+}
 
 onUnmounted(() => {
   if (weatherRefreshTimer) {

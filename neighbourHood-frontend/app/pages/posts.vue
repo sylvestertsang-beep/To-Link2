@@ -363,6 +363,15 @@ const rewardsCatalog = ref([
   }
 ])
 
+const isMyPost = (post: Post) => {
+  const postEmail = post.user?.email ? String(post.user.email).toLowerCase() : ''
+  const myEmail = currentUser.value.email ? String(currentUser.value.email).toLowerCase() : ''
+  if (postEmail && myEmail && postEmail === myEmail) return true
+  const postUuid = post.user?.uuid ? String(post.user.uuid) : ''
+  const myId = currentUser.value.id ? String(currentUser.value.id) : ''
+  return !!(postUuid && myId && postUuid === myId)
+}
+
 const filteredPosts = computed(() => {
   if (!posts.value || !Array.isArray(posts.value)) {
     return []

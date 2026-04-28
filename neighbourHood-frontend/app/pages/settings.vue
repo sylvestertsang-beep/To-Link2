@@ -360,6 +360,14 @@ watch(() => settingsForm.darkMode, (isDark) => {
   applyDarkMode(isDark)
 })
 
+// Hide Secret tab when user navigates away from it
+watch(activeTab, (newTab, oldTab) => {
+  if (oldTab === 'secret' && newTab !== 'secret') {
+    secretSettingUnlocked.value = false
+    localStorage.removeItem('adminSecretSettingUnlocked')
+  }
+})
+
 // Load settings from localStorage on mount
 onMounted(() => {
   const savedSettings = localStorage.getItem('userSettings')
