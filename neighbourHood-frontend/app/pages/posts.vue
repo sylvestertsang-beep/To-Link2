@@ -123,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import PostCard from '~/components/PostCard.vue'
@@ -795,6 +795,7 @@ function reportQuest(quest: any) {
 }
 
 onMounted(async () => {
+  window.addEventListener('storage', handleDeleteAllStorage)
   try {
     const [userError, userData] = await getUser()
     if (!userError && userData) {
@@ -884,6 +885,16 @@ onMounted(async () => {
   } finally {
     isLoadingPosts.value = false
   }
+})
+
+const handleDeleteAllStorage = (e: StorageEvent) => {
+  if (e.key === 'deletedAllPosts' && (e.newValue === '1' || e.newValue === 'true')) {
+    posts.value = []
+  }
+}
+
+onUnmounted(() => {
+  window.removeEventListener('storage', handleDeleteAllStorage)
 })
 </script>
 

@@ -671,6 +671,7 @@ const approveApplicant = (questId: number, applicantId: string) => {
 
 // Load posts from API and accepted quests from localStorage
 onMounted(async () => {
+  window.addEventListener('storage', handleDeleteAllStorage)
   const savedProfileRaw = localStorage.getItem('userProfile')
   if (savedProfileRaw) {
     try {
@@ -817,7 +818,15 @@ onUnmounted(() => {
     clearInterval(weatherRefreshTimer)
     weatherRefreshTimer = null
   }
+  window.removeEventListener('storage', handleDeleteAllStorage)
 })
+
+const handleDeleteAllStorage = (e: StorageEvent) => {
+  if (e.key === 'deletedAllPosts' && (e.newValue === '1' || e.newValue === 'true')) {
+    deletedAllPosts.value = true
+    allPosts.value = []
+  }
+}
 
 const goToCreatePost = () => {
   router.push('/create-post')
