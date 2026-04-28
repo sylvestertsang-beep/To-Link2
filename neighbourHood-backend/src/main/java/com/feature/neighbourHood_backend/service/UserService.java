@@ -91,15 +91,16 @@ public class UserService implements UserDetailsService {
             throw new BusinessException(ErrorCode.AUTH_USERNAME_ALREADY_EXISTS, "Username is already registered");
         }
 
-        // Get USER role
-        Optional<Role> role = roleRepository.findByName("USER");
-        if (!role.isPresent()) {
-            throw new BusinessException(ErrorCode.AUTH_ROLE_NOT_FOUND, "User role not found in system");
-        }
+        // Ensure the default USER role exists even in fresh databases.
+        Role role = roleRepository.findByName("USER").orElseGet(() -> {
+            Role newRole = new Role();
+            newRole.setName("USER");
+            return roleRepository.save(newRole);
+        });
 
         try {
             User rUser = new User(username, email, encoder.encode(password), hkid,
-                    age, address1, address2, address3, phone, status, role.get());
+                    age, address1, address2, address3, phone, status, role);
             userRepository.save(rUser);
             return true;
         } catch (Exception ex) {
