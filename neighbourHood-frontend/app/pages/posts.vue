@@ -221,6 +221,10 @@ const mergePosts = (localPosts: Post[], remotePosts: Post[]) => {
       return
     }
 
+    if (!(post as Post & { isLocalOnly?: boolean }).isLocalOnly) {
+      return
+    }
+
     postMap.set(post.id, post)
   })
 

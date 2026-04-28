@@ -274,8 +274,9 @@ const createPost = async () => {
     const localPostsRaw = localStorage.getItem('userPosts')
     const localPosts = localPostsRaw ? JSON.parse(localPostsRaw) : []
 
-    const optimisticPost: Post = {
-      id: Date.now(),
+    const createdPostId = Number(response?.data)
+    const optimisticPost: Post & { isLocalOnly?: boolean } = {
+      id: Number.isFinite(createdPostId) && createdPostId > 0 ? createdPostId : Date.now(),
       type: postForm.type,
       user: {
         uuid: String(savedProfile?.uuid || savedProfile?.email || Date.now()),
@@ -291,7 +292,8 @@ const createPost = async () => {
       is_important: postForm.is_important,
       redeemPoints: postForm.redeemPoints ?? 0,
       paymentMethod: postForm.paymentMethod,
-      createTime: new Date()
+      createTime: new Date(),
+      isLocalOnly: true
     }
 
     localStorage.setItem('userPosts', JSON.stringify([optimisticPost, ...localPosts]))

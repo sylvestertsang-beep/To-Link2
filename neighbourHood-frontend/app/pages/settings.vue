@@ -251,12 +251,6 @@
         </el-tabs>
 
       </el-card>
-const hideSecretSetting = () => {
-  localStorage.removeItem('adminSecretSettingUnlocked')
-  secretSettingUnlocked.value = false
-  activeTab.value = 'appearance'
-}
-
     </div>
     </div>
   </NuxtLayout>
@@ -481,6 +475,12 @@ const syncSecretSettingState = () => {
   if (!secretSettingUnlocked.value && activeTab.value === 'secret') {
     activeTab.value = 'appearance'
   }
+}
+
+const hideSecretSetting = () => {
+  localStorage.removeItem('adminSecretSettingUnlocked')
+  secretSettingUnlocked.value = false
+  activeTab.value = 'appearance'
 }
 
 const deleteAllPostsFromSecret = () => {
