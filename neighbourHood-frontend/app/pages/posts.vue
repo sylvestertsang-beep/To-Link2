@@ -380,7 +380,7 @@ const filteredPosts = computed(() => {
   let filtered = posts.value.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       post.content.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesMine = showOnlyMyPosts.value ? isMyPost(post) : !isMyPost(post)
+    const matchesMine = !showOnlyMyPosts.value || isMyPost(post)
     return matchesSearch && matchesMine
   })
 
