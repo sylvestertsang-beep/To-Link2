@@ -493,12 +493,31 @@ const profileRules = reactive<FormRules>({
   ]
 })
 
+const parseJson = (raw: string | null) => {
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+const getProfileKeyByEmail = (email: string) => {
+  const normalized = String(email || '').trim().toLowerCase()
+  return normalized ? `userProfile:${normalized}` : ''
+}
+
 // Load profile from localStorage on mount
 onMounted(() => {
-  const savedProfile = localStorage.getItem('userProfile')
-  if (savedProfile) {
-    const parsed = JSON.parse(savedProfile)
-    Object.assign(profileForm, parsed)
+  const globalProfile = parseJson(localStorage.getItem('userProfile')) || {}
+  const globalEmail = String(globalProfile?.email || '')
+  const scopedProfileKey = getProfileKeyByEmail(globalEmail)
+  const scopedProfile = scopedProfileKey ? (parseJson(localStorage.getItem(scopedProfileKey)) || {}) : null
+
+  if (scopedProfile && Object.keys(scopedProfile).length > 0) {
+    Object.assign(profileForm, scopedProfile)
+  } else if (Object.keys(globalProfile).length > 0) {
+    Object.assign(profileForm, globalProfile)
   } else {
     // Set translated default value if no profile exists
     profileForm.username = t('username')
@@ -667,6 +686,8 @@ const saveProfile = async () => {
   saving.value = true
 
   try {
+    const previousEmail = String(currentEmail.value || profileForm.email || '')
+
     if (profileForm.email && profileForm.email !== currentEmail.value) {
       const [emailError, emailData] = await updateEmail(profileForm.email)
       const emailStatus = (emailError as any)?.response?.status
@@ -691,6 +712,16 @@ const saveProfile = async () => {
 
     // Save to localStorage
     localStorage.setItem('userProfile', JSON.stringify(profileForm))
+
+    const currentProfileKey = getProfileKeyByEmail(profileForm.email)
+    if (currentProfileKey) {
+      localStorage.setItem(currentProfileKey, JSON.stringify(profileForm))
+    }
+
+    const previousProfileKey = getProfileKeyByEmail(previousEmail)
+    if (previousProfileKey && currentProfileKey && previousProfileKey !== currentProfileKey) {
+      localStorage.removeItem(previousProfileKey)
+    }
 
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000))

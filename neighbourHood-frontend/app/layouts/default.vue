@@ -455,7 +455,20 @@ const loadUserSettings = () => {
 const loadUserProfile = () => {
   const savedProfile = localStorage.getItem('userProfile')
   if (savedProfile) {
-    userProfile.value = JSON.parse(savedProfile)
+    const parsed = JSON.parse(savedProfile)
+    const email = String(parsed?.email || '').toLowerCase()
+    if (email) {
+      const scopedRaw = localStorage.getItem(`userProfile:${email}`)
+      if (scopedRaw) {
+        try {
+          userProfile.value = JSON.parse(scopedRaw)
+          return
+        } catch {
+          // fallback to global profile
+        }
+      }
+    }
+    userProfile.value = parsed
   }
 }
 
@@ -659,10 +672,28 @@ const goToHome = () => {
   router.push('/home')
 }
 
+const clearAccountScopedStorage = () => {
+  const keysToClear = [
+    'userPosts',
+    'cachedPosts',
+    'deletedPostIds',
+    'deletedAllPosts',
+    'postRemovalNotifications',
+    'appNotifications',
+    'chatConversations',
+    'userQuests',
+    'adminSecretSettingUnlocked',
+    'userProfile'
+  ]
+
+  keysToClear.forEach((key) => localStorage.removeItem(key))
+}
+
 const handleCommand = async (command: string) => {
   if (command === 'logout') {
     localStorage.removeItem('token')
     localStorage.removeItem('userToken')
+    clearAccountScopedStorage()
     router.push('/')
   } else if (command === 'language') {
     const newLocale = locale.value === 'en' ? 'zh' : 'en'

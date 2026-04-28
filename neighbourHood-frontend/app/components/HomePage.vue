@@ -250,10 +250,28 @@ const handleMenuSelect = (index: string) => {
   }
 }
 
+const clearAccountScopedStorage = () => {
+  const keysToClear = [
+    'userPosts',
+    'cachedPosts',
+    'deletedPostIds',
+    'deletedAllPosts',
+    'postRemovalNotifications',
+    'appNotifications',
+    'chatConversations',
+    'userQuests',
+    'adminSecretSettingUnlocked',
+    'userProfile'
+  ]
+
+  keysToClear.forEach((key) => localStorage.removeItem(key))
+}
+
 const handleCommand = (command: string) => {
   if (command === 'logout') {
     localStorage.removeItem('token')
     localStorage.removeItem('userToken')
+    clearAccountScopedStorage()
     router.push('/')
   } else if (command === 'language') {
     language.value = language.value === 'en' ? 'zh' : 'en'

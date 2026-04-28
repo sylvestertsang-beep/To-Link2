@@ -446,6 +446,31 @@ const registerRules = computed(() => ({
   ],
 }))
 
+const clearAccountScopedStorage = () => {
+  const keysToClear = [
+    'userPosts',
+    'cachedPosts',
+    'deletedPostIds',
+    'deletedAllPosts',
+    'postRemovalNotifications',
+    'appNotifications',
+    'chatConversations',
+    'userQuests',
+    'adminSecretSettingUnlocked'
+  ]
+
+  keysToClear.forEach((key) => localStorage.removeItem(key))
+}
+
+const parseJson = (raw: string | null) => {
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
 const handleLogin = async () => {
   if (isLoggingIn.value) {
     return
@@ -481,9 +506,29 @@ const handleLogin = async () => {
       }
 
       // Persist the login email immediately so admin checks work on first load
-      const existingProfileRaw = localStorage.getItem('userProfile')
-      const existingProfile = existingProfileRaw ? (() => { try { return JSON.parse(existingProfileRaw) } catch { return {} } })() : {}
-      localStorage.setItem('userProfile', JSON.stringify({ ...existingProfile, email: loginForm.email }))
+      const existingProfile = parseJson(localStorage.getItem('userProfile')) || {}
+      const previousEmail = String(existingProfile?.email || '').toLowerCase()
+      const currentEmail = String(loginForm.email || '').toLowerCase()
+
+      if (previousEmail && currentEmail && previousEmail !== currentEmail) {
+        clearAccountScopedStorage()
+      }
+
+      const scopedProfileKey = currentEmail ? `userProfile:${currentEmail}` : ''
+      const scopedProfile = scopedProfileKey ? (parseJson(localStorage.getItem(scopedProfileKey)) || {}) : {}
+      const migratedProfile = Object.keys(scopedProfile).length > 0
+        ? scopedProfile
+        : (previousEmail === currentEmail ? existingProfile : {})
+
+      const activeProfile = {
+        ...migratedProfile,
+        email: loginForm.email
+      }
+
+      localStorage.setItem('userProfile', JSON.stringify(activeProfile))
+      if (scopedProfileKey) {
+        localStorage.setItem(scopedProfileKey, JSON.stringify(activeProfile))
+      }
 
       getUser()
       await navigateTo('/home')
@@ -542,6 +587,43 @@ const handleRegister = async () => {
     const [error, data] = await register(registerPayload)
     if (!error && data) {
       showError.value = false
+
+      const normalizedEmail = String(registerPayload.email || '').trim().toLowerCase()
+      if (normalizedEmail) {
+        const profileKey = `userProfile:${normalizedEmail}`
+        const existingScopedProfile = parseJson(localStorage.getItem(profileKey)) || {}
+        const seededProfile = {
+          avatar: 'https://cube.elemecdn.com/0/88/03b0f476b63c5258a53e1b43f2ecb3.svg',
+          bio: '',
+          username: registerPayload.name,
+          email: registerPayload.email,
+          phone: registerPayload.phone,
+          status: registerPayload.status || '',
+          address: {
+            country: '',
+            nation: '',
+            area: '',
+            street: registerPayload.address1 || '',
+            building: registerPayload.address2 || '',
+            floor: '',
+            room: registerPayload.address3 || ''
+          }
+        }
+
+        localStorage.setItem(profileKey, JSON.stringify({
+          ...seededProfile,
+          ...existingScopedProfile,
+          username: registerPayload.name,
+          email: registerPayload.email,
+          phone: registerPayload.phone,
+          status: registerPayload.status || '',
+          address: {
+            ...seededProfile.address,
+            ...(existingScopedProfile.address || {})
+          }
+        }))
+      }
+
       // After successful registration, switch to login mode
       isLoginMode.value = true
       // Clear form
